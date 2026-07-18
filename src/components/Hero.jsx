@@ -39,7 +39,9 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-(--color-forest) bg-(--color-leaf-soft)/60 px-3 py-1.5 rounded-full"
           >
-            Carbon intelligence, live
+            Carbon intelligence
+            <span className="w-1.5 h-1.5 rounded-full bg-(--color-leaf) animate-pulse" />
+            Live
           </motion.span>
 
           <motion.h1

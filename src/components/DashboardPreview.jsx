@@ -34,7 +34,7 @@ export default function DashboardPreview() {
           viewport={{ once: true, margin: '-100px' }}
           transition={{ duration: 0.6 }}
         >
-          <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">Dashboard</span>
+          <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">· Dashboard ·</span>
           <h2 className="font-display text-4xl text-(--color-forest-deep) mt-3 leading-tight">
             One screen, every emission source, always current.
           </h2>

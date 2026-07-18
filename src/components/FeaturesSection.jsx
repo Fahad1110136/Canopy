@@ -38,7 +38,7 @@ export default function FeaturesSection() {
     <section id="features" className="py-24 px-6">
       <div className="mx-auto max-w-6xl">
         <div className="max-w-xl mb-14">
-          <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">Product</span>
+          <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">· Product ·</span>
           <h2 className="font-display text-4xl text-(--color-forest-deep) mt-3 leading-tight">
             Everything a sustainability team needs, nothing they have to chase down.
           </h2>

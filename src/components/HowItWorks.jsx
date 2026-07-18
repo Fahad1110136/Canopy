@@ -28,7 +28,7 @@ export default function HowItWorks() {
     <section id="how-it-works" className="py-24 px-6 bg-(--color-surface)">
       <div className="mx-auto max-w-6xl">
         <div className="max-w-xl mb-16">
-          <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">Process</span>
+          <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">· Process ·</span>
           <h2 className="font-display text-4xl text-(--color-forest-deep) mt-3 leading-tight">
             From first connection to filed report, in four steps.
           </h2>
