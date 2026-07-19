@@ -1,8 +1,7 @@
 # 🌿 Canopy — Carbon Intelligence App
 
 A responsive marketing landing page for **Canopy**, a fictional carbon-intelligence
-SaaS product, built as an internship project (NeuroFive Solutions). It combines
-a fully responsive, animated frontend with one section that consumes a real,
+SaaS product. It combines a fully responsive, animated frontend with one section that consumes a real,
 live public API.
 
 🔗 **Live site:** https://canopy-carbonintelligent.vercel.app
@@ -19,10 +18,7 @@ live public API.
   - A global friendly-error banner with a **Retry** button if the whole
     request fails
   - A live search/filter input over the displayed cities
-- No API key or account required — this was a deliberate choice after an
-  earlier attempt using the Electricity Maps API hit free-tier limits
-  (that provider's free key is scoped to a single country/zone, which
-  didn't fit a page meant to show many countries at once).
+- No account required
 
 
 
