@@ -6,6 +6,7 @@ import StatsSection from './components/StatsSection.jsx'
 import FeaturesSection from './components/FeaturesSection.jsx'
 import HowItWorks from './components/HowItWorks.jsx'
 import DashboardPreview from './components/DashboardPreview.jsx'
+import FacilitiesManager from './components/FacilitiesManager.jsx'
 import AirQualitySection from './components/AirQualitySection.jsx'
 import Testimonial from './components/Testimonial.jsx'
 import CTASection from './components/CTASection.jsx'
@@ -23,6 +24,7 @@ export default function App() {
         <FeaturesSection />
         <HowItWorks />
         <DashboardPreview />
+        <FacilitiesManager />
         <AirQualitySection />
         <Testimonial />
         <CTASection />

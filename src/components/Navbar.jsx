@@ -6,6 +6,7 @@ const LINKS = [
   { label: 'Product', href: '#features' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Dashboard', href: '#dashboard' },
+  { label: 'Facilities', href: '#facilities' },
   { label: 'Live data', href: '#air-quality' },
   { label: 'Customers', href: '#testimonial' },
 ]

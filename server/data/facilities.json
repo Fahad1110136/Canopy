@@ -1,0 +1,38 @@
+[
+  {
+    "id": "seed1",
+    "name": "Lahore Manufacturing Plant",
+    "location": "Lahore, Pakistan",
+    "category": "Manufacturing",
+    "monthlyEmissions": 18.4,
+    "notes": "Primary production facility",
+    "createdAt": "2026-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "seed2",
+    "name": "Berlin Logistics Hub",
+    "location": "Berlin, Germany",
+    "category": "Logistics",
+    "monthlyEmissions": 9.1,
+    "notes": "",
+    "createdAt": "2026-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "seed3",
+    "name": "Austin HQ Office",
+    "location": "Austin, USA",
+    "category": "Office",
+    "monthlyEmissions": 3.2,
+    "notes": "",
+    "createdAt": "2026-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "ms1puozga5426",
+    "createdAt": "2026-07-26T11:30:04.156Z",
+    "name": "Karachi Carb Emission",
+    "location": "Karachi, Pakistan",
+    "category": "Energy",
+    "monthlyEmissions": 18.7,
+    "notes": "Prime Production Plant"
+  }
+]
