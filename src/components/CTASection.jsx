@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 
@@ -21,13 +22,13 @@ export default function CTASection() {
           Set up your first integration in under fifteen minutes. No credit card required.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-4 relative">
-          <a
-            href="#"
+          <Link
+            to="/signup"
             className="group inline-flex items-center gap-2 bg-(--color-gold) text-(--color-forest-deep) px-7 py-3.5 rounded-full font-medium hover:bg-(--color-gold-soft) transition-colors visible-focus"
           >
             Start free trial
             <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
-          </a>
+          </Link>
           <a
             href="#"
             className="text-sm font-medium text-white/90 underline decoration-white/40 underline-offset-4 hover:text-white visible-focus"

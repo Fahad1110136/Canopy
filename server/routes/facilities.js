@@ -6,6 +6,7 @@ import {
   updateFacility,
   deleteFacility,
 } from '../store.js'
+import { requireAuth } from '../middleware/requireAuth.js'
 
 const router = Router()
 
@@ -51,8 +52,8 @@ router.get('/:id', (req, res) => {
   res.json(facility)
 })
 
-// POST /api/facilities — create
-router.post('/', (req, res) => {
+// POST /api/facilities — create (requires login)
+router.post('/', requireAuth, (req, res) => {
   const errors = validateFacilityInput(req.body)
   if (errors.length) return res.status(400).json({ error: errors.join('; ') })
 
@@ -66,8 +67,8 @@ router.post('/', (req, res) => {
   res.status(201).json(facility)
 })
 
-// PUT /api/facilities/:id — update (partial updates allowed)
-router.put('/:id', (req, res) => {
+// PUT /api/facilities/:id — update (partial updates allowed, requires login)
+router.put('/:id', requireAuth, (req, res) => {
   const existing = getFacilityById(req.params.id)
   if (!existing) return res.status(404).json({ error: 'Facility not found' })
 
@@ -85,8 +86,8 @@ router.put('/:id', (req, res) => {
   res.json(updated)
 })
 
-// DELETE /api/facilities/:id
-router.delete('/:id', (req, res) => {
+// DELETE /api/facilities/:id (requires login)
+router.delete('/:id', requireAuth, (req, res) => {
   const success = deleteFacility(req.params.id)
   if (!success) return res.status(404).json({ error: 'Facility not found' })
   res.status(204).send()

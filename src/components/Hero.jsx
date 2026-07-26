@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import TreeCanvas from '../three/TreeCanvas.jsx'
@@ -39,9 +40,7 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-(--color-forest) bg-(--color-leaf-soft)/60 px-3 py-1.5 rounded-full"
           >
-            Carbon intelligence
-            <span className="w-1.5 h-1.5 rounded-full bg-(--color-leaf) animate-pulse" />
-            Live
+            Carbon intelligence, live
           </motion.span>
 
           <motion.h1
@@ -73,13 +72,13 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-9 flex flex-wrap items-center gap-4"
           >
-            <a
-              href="#cta"
+            <Link
+              to="/signup"
               className="group inline-flex items-center gap-2 bg-(--color-forest) text-white px-6 py-3.5 rounded-full font-medium hover:bg-(--color-forest-deep) transition-colors visible-focus"
             >
               Start free trial
               <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
-            </a>
+            </Link>
             <a
               href="#how-it-works"
               className="text-sm font-medium text-(--color-ink) underline decoration-(--color-leaf) decoration-2 underline-offset-4 hover:text-(--color-forest-deep) visible-focus"

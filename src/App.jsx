@@ -1,35 +1,29 @@
-import Navbar from './components/Navbar.jsx'
-import ScrollProgress from './components/ScrollProgress.jsx'
-import Hero from './components/Hero.jsx'
-import TrustBar from './components/TrustBar.jsx'
-import StatsSection from './components/StatsSection.jsx'
-import FeaturesSection from './components/FeaturesSection.jsx'
-import HowItWorks from './components/HowItWorks.jsx'
-import DashboardPreview from './components/DashboardPreview.jsx'
-import FacilitiesManager from './components/FacilitiesManager.jsx'
-import AirQualitySection from './components/AirQualitySection.jsx'
-import Testimonial from './components/Testimonial.jsx'
-import CTASection from './components/CTASection.jsx'
-import Footer from './components/Footer.jsx'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+import LandingPage from './pages/LandingPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
+import SignupPage from './pages/SignupPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-(--color-bg) text-(--color-ink)">
-      <ScrollProgress />
-      <Navbar />
-      <main>
-        <Hero />
-        <TrustBar />
-        <StatsSection />
-        <FeaturesSection />
-        <HowItWorks />
-        <DashboardPreview />
-        <FacilitiesManager />
-        <AirQualitySection />
-        <Testimonial />
-        <CTASection />
-      </main>
-      <Footer />
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

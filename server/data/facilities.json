@@ -1,14 +1,5 @@
 [
   {
-    "id": "seed1",
-    "name": "Lahore Manufacturing Plant",
-    "location": "Lahore, Pakistan",
-    "category": "Manufacturing",
-    "monthlyEmissions": 18.4,
-    "notes": "Primary production facility",
-    "createdAt": "2026-06-01T00:00:00.000Z"
-  },
-  {
     "id": "seed2",
     "name": "Berlin Logistics Hub",
     "location": "Berlin, Germany",

@@ -149,9 +149,7 @@ export default function FacilitiesManager() {
             Facilities registry
           </h2>
           <p className="mt-3 text-[15px] text-(--color-ink-soft) leading-relaxed">
-            Unlike the rest of this page, this section is wired to a real Express API
-            we built ourselves — add, edit, and remove facilities and it persists on
-            the server.
+            Wired to a real Express API we built ourselves — add, edit, and remove facilities and it persists on.
           </p>
         </div>
 
