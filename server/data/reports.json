@@ -1,0 +1,19 @@
+[
+  {
+    "id": "ms62u9vdtzm6y",
+    "createdAt": "2026-07-29T12:44:44.281Z",
+    "facilityId": "seed2",
+    "facilityName": "Berlin Logistics Hub",
+    "reportDate": "2026-03-12",
+    "scope": "Scope 1",
+    "amount": 100.1,
+    "reporterName": "Muhammad Fahad Idrees",
+    "notes": "Too much emissions",
+    "evidenceFile": {
+      "filename": "1785329084271-nyt6wt.pdf",
+      "originalName": "Muhammad_Fahad_Idrees.pdf",
+      "url": "/uploads/1785329084271-nyt6wt.pdf"
+    },
+    "submittedBy": "ms1sy9qzcor7o"
+  }
+]

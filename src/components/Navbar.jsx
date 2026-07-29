@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 // Section anchors always point back to "/" first so they work no matter
 // which page you're currently on (login, dashboard, etc).
 const SECTION_LINKS = [
-  { label: 'Product', href: '/#features' },
+  { label: 'Home', href: '/#features' },
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Product tour', href: '/#dashboard' },
   { label: 'Live data', href: '/#air-quality' },
