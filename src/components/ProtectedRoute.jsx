@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function ProtectedRoute({ children }) {
@@ -7,15 +8,14 @@ export default function ProtectedRoute({ children }) {
 
   if (initializing) {
     return (
-      <div className="min-h-[60vh] grid place-items-center text-sm text-(--color-ink-soft)">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-sm text-(--color-ink-soft)">
+        <Loader2 size={20} className="animate-spin text-(--color-forest)" />
         Checking your session…
       </div>
     )
   }
 
   if (!isAuthenticated) {
-    // Remember where they were headed so the login page can send them back
-    // after a successful login, instead of always landing on /dashboard.
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 

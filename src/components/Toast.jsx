@@ -1,7 +1,17 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react'
+import { useToastStore } from '../store/toastStore.js'
 
-export default function Toast({ toast, onDismiss }) {
+/**
+ * Reads directly from the global toast store — no props needed. Rendered
+ * once in <Layout>, so any page or component can call
+ * useToastStore.getState().showToast(...) and this will show it, without
+ * threading toast state down through props.
+ */
+export default function Toast() {
+  const toast = useToastStore((state) => state.toast)
+  const dismissToast = useToastStore((state) => state.dismissToast)
+
   return (
     <div className="fixed top-24 right-4 sm:right-6 z-[100] w-[calc(100%-2rem)] sm:w-full max-w-sm pointer-events-none">
       <AnimatePresence>
@@ -24,7 +34,7 @@ export default function Toast({ toast, onDismiss }) {
             )}
             <p className="flex-1 text-sm text-(--color-ink)">{toast.message}</p>
             <button
-              onClick={onDismiss}
+              onClick={dismissToast}
               aria-label="Dismiss notification"
               className="shrink-0 text-(--color-ink-soft) hover:text-(--color-ink) visible-focus"
             >
