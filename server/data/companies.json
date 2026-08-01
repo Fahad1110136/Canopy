@@ -1,0 +1,20 @@
+[
+  {
+    "id": "demo-company",
+    "name": "Demo Company",
+    "joinCode": "DEMO01",
+    "createdAt": "2026-06-01T00:00:00.000Z"
+  },
+  {
+    "id": "msans4jx9efcs",
+    "name": "Carbo Can Hubs",
+    "joinCode": "KH8KHA",
+    "createdAt": "2026-08-01T17:42:00.717Z"
+  },
+  {
+    "id": "msao1xjfyvsrh",
+    "name": "Engro Fertilizers Limited",
+    "joinCode": "TSHGKR",
+    "createdAt": "2026-08-01T17:49:38.187Z"
+  }
+]

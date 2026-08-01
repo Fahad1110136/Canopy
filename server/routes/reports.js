@@ -4,16 +4,16 @@ import { getFacilityById } from '../store.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 
 export const SCOPES = ['Scope 1', 'Scope 2', 'Scope 3']
-
-// Matches the filenames our upload storage config generates — used to
-// sanity-check that evidenceFile actually points at something we stored,
-// rather than trusting an arbitrary client-supplied URL.
 const SAFE_FILENAME_RE = /^[0-9]+-[a-z0-9]+\.[a-z0-9]+$/i
 
-function validate(body) {
+function validate(body, companyId) {
   const errors = []
 
-  if (!body.facilityId || !getFacilityById(body.facilityId)) {
+  // A facility must both exist AND belong to the caller's own company —
+  // otherwise someone could file a report against another company's
+  // facility just by guessing/knowing its ID.
+  const facility = body.facilityId ? getFacilityById(body.facilityId) : null
+  if (!facility || facility.companyId !== companyId) {
     errors.push('A valid facility must be selected.')
   }
 
@@ -25,18 +25,14 @@ function validate(body) {
     else if (date.getTime() > Date.now()) errors.push('Report date cannot be in the future.')
   }
 
-  if (!SCOPES.includes(body.scope)) {
-    errors.push(`Scope must be one of: ${SCOPES.join(', ')}.`)
-  }
+  if (!SCOPES.includes(body.scope)) errors.push(`Scope must be one of: ${SCOPES.join(', ')}.`)
 
   const amount = Number(body.amount)
   if (body.amount === undefined || body.amount === '' || Number.isNaN(amount) || amount <= 0) {
     errors.push('Amount must be a number greater than 0.')
   }
 
-  if (!body.reporterName || !body.reporterName.trim()) {
-    errors.push('Reporter name is required.')
-  }
+  if (!body.reporterName || !body.reporterName.trim()) errors.push('Reporter name is required.')
 
   if (body.evidenceFile) {
     const f = body.evidenceFile
@@ -50,24 +46,21 @@ function validate(body) {
 
 const router = Router()
 
+// GET /api/reports — company-scoped, same as facilities.
 router.get('/', requireAuth, (req, res) => {
-  res.json(getReports())
+  const all = getReports()
+  res.json(all.filter((r) => r.companyId === req.user.companyId))
 })
 
-// POST /api/reports — now plain JSON. The evidence file, if any, was
-// already uploaded separately via POST /api/uploads (see routes/uploads.js)
-// before this request happens — this endpoint just links the resulting
-// file reference to the report, instead of handling the upload itself.
 router.post('/', requireAuth, (req, res) => {
-  const errors = validate(req.body)
-  if (errors.length) {
-    return res.status(400).json({ error: errors.join(' ') })
-  }
+  const errors = validate(req.body, req.user.companyId)
+  if (errors.length) return res.status(400).json({ error: errors.join(' ') })
 
   const facility = getFacilityById(req.body.facilityId)
   const report = createReport({
     facilityId: req.body.facilityId,
     facilityName: facility.name,
+    companyId: req.user.companyId,
     reportDate: req.body.reportDate,
     scope: req.body.scope,
     amount: Number(req.body.amount),

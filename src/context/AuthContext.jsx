@@ -8,21 +8,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [initializing, setInitializing] = useState(true)
 
-  // On first load, if a token is already saved (from a previous session),
-  // verify it against the backend and restore the user — this is what lets
-  // a refresh keep you logged in instead of bouncing you to /login.
   useEffect(() => {
     const token = getToken()
-    if (!token) {
-      setInitializing(false)
-      return
-    }
+    if (!token) { setInitializing(false); return }
     fetchCurrentUser()
       .then((u) => setUser(u))
-      .catch(() => {
-        clearToken()
-        setUser(null)
-      })
+      .catch(() => { clearToken(); setUser(null) })
       .finally(() => setInitializing(false))
   }, [])
 
@@ -32,8 +23,8 @@ export function AuthProvider({ children }) {
     setUser(loggedInUser)
   }, [])
 
-  const signup = useCallback(async (name, email, password) => {
-    const { token, user: newUser } = await signupRequest(name, email, password)
+  const signup = useCallback(async (name, email, password, companyChoice) => {
+    const { token, user: newUser } = await signupRequest(name, email, password, companyChoice)
     saveToken(token)
     setUser(newUser)
   }, [])
@@ -43,15 +34,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
-  const value = {
-    user,
-    initializing,
-    isAuthenticated: Boolean(user),
-    login,
-    signup,
-    logout,
-  }
-
+  const value = { user, initializing, isAuthenticated: Boolean(user), login, signup, logout }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
