@@ -12,6 +12,9 @@ const GAUGE_C = 2 * Math.PI * GAUGE_R
 const GAUGE_SWEEP = 270
 const GAUGE_TRACK = GAUGE_C * (GAUGE_SWEEP / 360)
 
+// How often the background silently re-fetches live data (ms).
+const REFRESH_INTERVAL_MS = 30000
+
 // Each location gets a consistent identity color for its gauge line —
 // separate from the AQI severity tone, which stays health-coded (green/gold/rust).
 const LOCATION_COLORS = ['var(--color-forest)', 'var(--color-leaf)', 'var(--color-gold, #b58b2e)', 'var(--color-forest-deep)']
@@ -49,26 +52,37 @@ export default function Hero() {
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
-    setGlobalError(null)
 
-    fetchAllLocations(AQ_LOCATIONS, { signal: controller.signal })
-      .then((results) => {
-        if (controller.signal.aborted) return
-        setLocations(results)
-        const allFailed = results.every((r) => r.status === 'error')
-        if (allFailed) setGlobalError(results[0]?.error || 'UNKNOWN')
-      })
-      .catch(() => {
-        if (controller.signal.aborted) return
-        setGlobalError('UNKNOWN')
-      })
-      .finally(() => {
-        if (controller.signal.aborted) return
-        setLoading(false)
-      })
+    // isInitial=true → first load for this effect run (shows loading skeleton, triggered
+    // by mount or manual retry). isInitial=false → silent background refresh, no skeleton flash.
+    const loadData = (isInitial) => {
+      if (isInitial) setLoading(true)
+      setGlobalError(null)
 
-    return () => controller.abort()
+      fetchAllLocations(AQ_LOCATIONS, { signal: controller.signal })
+        .then((results) => {
+          if (controller.signal.aborted) return
+          setLocations(results)
+          const allFailed = results.every((r) => r.status === 'error')
+          if (allFailed) setGlobalError(results[0]?.error || 'UNKNOWN')
+        })
+        .catch(() => {
+          if (controller.signal.aborted) return
+          setGlobalError('UNKNOWN')
+        })
+        .finally(() => {
+          if (controller.signal.aborted) return
+          if (isInitial) setLoading(false)
+        })
+    }
+
+    loadData(true)
+    const intervalId = setInterval(() => loadData(false), REFRESH_INTERVAL_MS)
+
+    return () => {
+      controller.abort()
+      clearInterval(intervalId)
+    }
   }, [reloadToken])
 
   // The selected location drives the main gauge and pollutant badges
@@ -230,12 +244,13 @@ export default function Hero() {
             />
           </div>
 
-          {/* Pollutant badges — live readouts for the headquarters location */}
+          {/* Pollutant badge: PM2.5 — repositioned to sit between the O3 badge (left)
+              and the Cleanest Sites card (right), centered horizontally. */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: [0, -8, 0] }}
+            animate={{ opacity: 1, y: [25, 35, 25] }}
             transition={{ opacity: { delay: 0.9, duration: 0.5 }, y: { delay: 1.2, duration: 4, repeat: Infinity, ease: 'easeInOut' } }}
-            className="absolute top-2 left-0 sm:left-4 flex items-center gap-2 bg-white shadow-md rounded-xl px-3 py-2 border border-(--color-leaf-soft)"
+            className="absolute bottom-10 left-[15%] -translate-x-1/2 z-20 flex items-center gap-2 bg-white shadow-md rounded-xl px-3 py-2 border border-(--color-leaf-soft)"
           >
             <Wind size={14} className="text-(--color-forest)" />
             <span className="text-xs font-medium text-(--color-ink)">
@@ -245,7 +260,7 @@ export default function Hero() {
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: [40, 50, 40] }}
+            animate={{ opacity: 1, y: [0, 10, 0] }}
             transition={{ opacity: { delay: 1.05, duration: 0.5 }, y: { delay: 1.4, duration: 5, repeat: Infinity, ease: 'easeInOut' } }}
             className="absolute bottom-16 left-0 sm:left-2 flex items-center gap-2 bg-white shadow-md rounded-xl px-3 py-2 border border-(--color-leaf-soft)"
           >
@@ -263,7 +278,7 @@ export default function Hero() {
             className="absolute bottom-2 right-0 sm:right-2 w-44 bg-white shadow-md rounded-xl px-3 py-2.5 border border-(--color-leaf-soft)"
           >
             <p className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-(--color-ink-soft) mb-1.5">
-              <Factory size={11} /> Cleanest now
+              <Factory size={11} /> Cleanest Sites
             </p>
             {loading && <div className="h-7 rounded-md bg-(--color-bg) animate-pulse" />}
             {!loading && cleanest.length === 0 && (
@@ -338,9 +353,9 @@ export default function Hero() {
                 <span className="text-xs text-(--color-ink-soft) mt-1">
                   EU AQI · {spotlight?.name || 'headquarters'}
                 </span>
-                <span className="text-[11px] font-mono text-(--color-ink-soft) mt-2">
-                  {globalError ? describeError(globalError) : `${AQ_LOCATIONS.length} sites tracked live`}
-                </span>
+                {/* <span className="text-[11px] font-mono text-(--color-ink-soft) mt-2">
+                  {globalError ? describeError(globalError) : `${AQ_LOCATIONS.length} Live Sites`}
+                </span> */}
               </div>
             </div>
           </motion.div>
