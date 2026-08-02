@@ -1,11 +1,33 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { ArrowRight, ChevronDown, Zap, Plane, Building2 } from 'lucide-react'
+import { ArrowRight, ChevronDown, Wind, Sun, Factory, AlertTriangle, RefreshCw } from 'lucide-react'
+import { AQ_LOCATIONS } from '../data/airQualityLocations.js'
+import { fetchAllLocations, describeError } from '../services/openMeteoAirQuality.js'
+
+// Semicircular gauge geometry — a 270° arc, drawn via a rotated full circle
+// with a dashed gap, so it reads as a speedometer rather than a closed ring.
+const GAUGE_R = 80
+const GAUGE_C = 2 * Math.PI * GAUGE_R
+const GAUGE_SWEEP = 270
+const GAUGE_TRACK = GAUGE_C * (GAUGE_SWEEP / 360)
+
+// Each location gets a consistent identity color for its gauge line —
+// separate from the AQI severity tone, which stays health-coded (green/gold/rust).
+const LOCATION_COLORS = ['var(--color-forest)', 'var(--color-leaf)', 'var(--color-gold, #b58b2e)', 'var(--color-forest-deep)']
+function locationColor(index) {
+  return LOCATION_COLORS[index % LOCATION_COLORS.length]
+}
+
+function aqiTone(aqi) {
+  if (aqi == null) return { stroke: 'var(--color-line)', text: 'text-(--color-ink-soft)', chip: 'bg-(--color-bg)' }
+  if (aqi < 40) return { stroke: 'var(--color-leaf)', text: 'text-(--color-forest-deep)', chip: 'bg-(--color-leaf-soft)/60' }
+  if (aqi < 80) return { stroke: 'var(--color-gold, #b58b2e)', text: 'text-(--color-forest-deep)', chip: 'bg-(--color-gold-soft)/50' }
+  return { stroke: '#B5502E', text: 'text-[#B5502E]', chip: 'bg-[#B5502E]/10' }
+}
 
 export default function Hero() {
   const sectionRef = useRef(null)
-  const [count, setCount] = useState(0)
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -18,48 +40,68 @@ export default function Hero() {
   const copyOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
   const visualY = useTransform(scrollYProgress, [0, 1], [0, 40])
 
-  const targetPercent = 42
+  // Live air quality — same service the Air Quality section uses
+  const [locations, setLocations] = useState(() => AQ_LOCATIONS.map((l) => ({ ...l, status: 'loading' })))
+  const [loading, setLoading] = useState(true)
+  const [globalError, setGlobalError] = useState(null)
+  const [reloadToken, setReloadToken] = useState(0)
+  const [activeIndex, setActiveIndex] = useState(0)
 
-  // Industry benchmark tick position, as % coordinates around the ring (0% = top, clockwise)
-  const benchmarkPercent = 25
-  const benchmarkAngle = (benchmarkPercent / 100) * 2 * Math.PI - Math.PI / 2
-  const benchmarkLeft = 50 + 50 * Math.cos(benchmarkAngle)
-  const benchmarkTop = 50 + 50 * Math.sin(benchmarkAngle)
-
-  // Rising "boiling gas" particle field — varied size, color, speed, and wobble
-  const particles = [
-    { left: '8%', bottom: '4%', size: 6, color: 'var(--color-leaf)', duration: 6, delay: 0, xDrift: 8, rise: 150 },
-    { left: '17%', bottom: '10%', size: 4, color: 'var(--color-leaf)', duration: 7.4, delay: 1.1, xDrift: -10, rise: 130 },
-    { left: '28%', bottom: '2%', size: 3.5, color: 'var(--color-forest)', duration: 6.6, delay: 2.4, xDrift: 6, rise: 160 },
-    { left: '40%', bottom: '8%', size: 5, color: 'var(--color-gold, #b58b2e)', duration: 7.9, delay: 0.6, xDrift: -8, rise: 140 },
-    { left: '52%', bottom: '3%', size: 4.5, color: 'var(--color-leaf)', duration: 6.2, delay: 3.2, xDrift: 9, rise: 155 },
-    { left: '64%', bottom: '9%', size: 3, color: 'var(--color-forest)', duration: 8.3, delay: 1.8, xDrift: -6, rise: 125 },
-    { left: '76%', bottom: '5%', size: 5.5, color: 'var(--color-gold, #b58b2e)', duration: 7, delay: 2.9, xDrift: 7, rise: 145 },
-    { left: '86%', bottom: '11%', size: 4, color: 'var(--color-leaf)', duration: 6.8, delay: 0.3, xDrift: -9, rise: 135 },
-  ]
-
-  // Count-up animation for the headline percentage (also drives the ring fill)
   useEffect(() => {
-    let startTime
-    const duration = 1400
-    const delay = 900
+    const controller = new AbortController()
+    setLoading(true)
+    setGlobalError(null)
 
-    let rafId
-    const timeoutId = setTimeout(() => {
-      const step = (timestamp) => {
-        if (!startTime) startTime = timestamp
-        const progress = Math.min((timestamp - startTime) / duration, 1)
-        setCount(Math.round(progress * targetPercent))
-        if (progress < 1) rafId = requestAnimationFrame(step)
-      }
-      rafId = requestAnimationFrame(step)
-    }, delay)
+    fetchAllLocations(AQ_LOCATIONS, { signal: controller.signal })
+      .then((results) => {
+        if (controller.signal.aborted) return
+        setLocations(results)
+        const allFailed = results.every((r) => r.status === 'error')
+        if (allFailed) setGlobalError(results[0]?.error || 'UNKNOWN')
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return
+        setGlobalError('UNKNOWN')
+      })
+      .finally(() => {
+        if (controller.signal.aborted) return
+        setLoading(false)
+      })
 
-    return () => {
-      clearTimeout(timeoutId)
-      if (rafId) cancelAnimationFrame(rafId)
-    }
-  }, [])
+    return () => controller.abort()
+  }, [reloadToken])
+
+  // The selected location drives the main gauge and pollutant badges
+  const spotlight = locations[activeIndex]
+  const spotlightOk = spotlight?.status === 'ok'
+  const spotlightAqi = spotlightOk ? spotlight.data.aqi : null
+  const tone = aqiTone(spotlightAqi)
+  const lineColor = locationColor(activeIndex)
+
+  // The two cleanest reporting locations right now, for the ranked mini-card
+  const cleanest = useMemo(() => {
+    return locations
+      .filter((l) => l.status === 'ok' && l.name !== spotlight?.name)
+      .sort((a, b) => a.data.aqi - b.data.aqi)
+      .slice(0, 2)
+  }, [locations, spotlight])
+
+  const gaugeValue = spotlightAqi != null ? Math.min(100, Math.round(spotlightAqi)) : 0
+  const progressLength = GAUGE_TRACK * (gaugeValue / 100)
+
+  // Rising "boiling gas" particle field — tinted with the selected location's
+  // identity color, paced a little faster when that location's air is worse.
+  const severity = spotlightAqi != null ? Math.min(1, spotlightAqi / 100) : 0.2
+  const particleColor = lineColor
+  const particles = [
+    { left: '8%', bottom: '4%', size: 6, duration: 6, delay: 0, xDrift: 8, rise: 150 },
+    { left: '20%', bottom: '10%', size: 4, duration: 7.4, delay: 1.1, xDrift: -10, rise: 130 },
+    { left: '34%', bottom: '2%', size: 3.5, duration: 6.6, delay: 2.4, xDrift: 6, rise: 160 },
+    { left: '50%', bottom: '8%', size: 5, duration: 7.9, delay: 0.6, xDrift: -8, rise: 140 },
+    { left: '64%', bottom: '3%', size: 4.5, duration: 6.2, delay: 3.2, xDrift: 9, rise: 155 },
+    { left: '78%', bottom: '9%', size: 3, duration: 8.3, delay: 1.8, xDrift: -6, rise: 125 },
+    { left: '90%', bottom: '5%', size: 5.5, duration: 7, delay: 2.9, xDrift: 7, rise: 145 },
+  ].map((p) => ({ ...p, duration: p.duration * (1 - severity * 0.25) }))
 
   return (
     <section
@@ -141,7 +183,7 @@ export default function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* Right side: radial canopy gauge */}
+        {/* Right side: live air-quality spotlight */}
         <motion.div
           style={{ y: visualY }}
           initial={{ opacity: 0, scale: 0.92 }}
@@ -149,13 +191,7 @@ export default function Hero() {
           transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="relative h-[380px] sm:h-[460px] flex items-center justify-center"
         >
-          {/* Concentric canopy-ring backdrop */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[340px] h-[340px] sm:w-[400px] sm:h-[400px] rounded-full border border-(--color-leaf-soft)" />
-            <div className="absolute w-[270px] h-[270px] sm:w-[320px] sm:h-[320px] rounded-full border border-(--color-leaf-soft)" />
-          </div>
-
-          {/* Rising "boiling gas" particle field, glowing base beneath the rings */}
+          {/* Rising particle field, tinted and paced by the live reading */}
           <div className="absolute inset-x-0 bottom-0 h-40 overflow-hidden pointer-events-none">
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-(--color-leaf-soft)/50 to-transparent blur-md" />
             {particles.map((p, i) => (
@@ -167,7 +203,7 @@ export default function Hero() {
                   bottom: p.bottom,
                   width: p.size,
                   height: p.size,
-                  backgroundColor: p.color,
+                  backgroundColor: particleColor,
                 }}
                 animate={{
                   y: [0, -p.rise],
@@ -185,7 +221,7 @@ export default function Hero() {
             ))}
           </div>
 
-          {/* Soft pulsing glow behind the ring — centered the same way as the rings */}
+          {/* Soft pulsing glow behind the gauge */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <motion.div
               className="w-56 h-56 sm:w-64 sm:h-64 rounded-full bg-(--color-leaf-soft) blur-2xl"
@@ -194,15 +230,17 @@ export default function Hero() {
             />
           </div>
 
-          {/* Category badges orbiting the gauge */}
+          {/* Pollutant badges — live readouts for the headquarters location */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: [0, -8, 0] }}
             transition={{ opacity: { delay: 0.9, duration: 0.5 }, y: { delay: 1.2, duration: 4, repeat: Infinity, ease: 'easeInOut' } }}
             className="absolute top-2 left-0 sm:left-4 flex items-center gap-2 bg-white shadow-md rounded-xl px-3 py-2 border border-(--color-leaf-soft)"
           >
-            <Zap size={14} className="text-(--color-gold, #b58b2e)" />
-            <span className="text-xs font-medium text-(--color-ink)">Energy −22%</span>
+            <Wind size={14} className="text-(--color-forest)" />
+            <span className="text-xs font-medium text-(--color-ink)">
+              {loading ? 'PM2.5 …' : spotlightOk ? `PM2.5 ${Math.round(spotlight.data.pm2_5)} µg/m³` : 'PM2.5 —'}
+            </span>
           </motion.div>
 
           <motion.div
@@ -211,21 +249,36 @@ export default function Hero() {
             transition={{ opacity: { delay: 1.05, duration: 0.5 }, y: { delay: 1.4, duration: 5, repeat: Infinity, ease: 'easeInOut' } }}
             className="absolute bottom-16 left-0 sm:left-2 flex items-center gap-2 bg-white shadow-md rounded-xl px-3 py-2 border border-(--color-leaf-soft)"
           >
-            <Plane size={14} className="text-(--color-forest)" />
-            <span className="text-xs font-medium text-(--color-ink)">Travel −15%</span>
+            <Sun size={14} className="text-(--color-gold, #b58b2e)" />
+            <span className="text-xs font-medium text-(--color-ink)">
+              {loading ? 'Ozone …' : spotlightOk ? `O₃ ${Math.round(spotlight.data.ozone)} µg/m³` : 'Ozone —'}
+            </span>
           </motion.div>
 
+          {/* Ranked mini-card: cleanest reporting locations right now */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: [0, -6, 0] }}
             transition={{ opacity: { delay: 1.2, duration: 0.5 }, y: { delay: 1.6, duration: 4.5, repeat: Infinity, ease: 'easeInOut' } }}
-            className="absolute bottom-2 right-0 sm:right-4 flex items-center gap-2 bg-white shadow-md rounded-xl px-3 py-2 border border-(--color-leaf-soft)"
+            className="absolute bottom-2 right-0 sm:right-2 w-44 bg-white shadow-md rounded-xl px-3 py-2.5 border border-(--color-leaf-soft)"
           >
-            <Building2 size={14} className="text-(--color-forest)" />
-            <span className="text-xs font-medium text-(--color-ink)">Facilities −9%</span>
+            <p className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-(--color-ink-soft) mb-1.5">
+              <Factory size={11} /> Cleanest now
+            </p>
+            {loading && <div className="h-7 rounded-md bg-(--color-bg) animate-pulse" />}
+            {!loading && cleanest.length === 0 && (
+              <p className="text-xs text-(--color-ink-soft)">No data yet</p>
+            )}
+            {!loading &&
+              cleanest.map((loc) => (
+                <div key={loc.name} className="flex items-center justify-between text-xs text-(--color-ink) py-0.5">
+                  <span className="truncate">{loc.flag} {loc.name}</span>
+                  <span className="font-mono text-(--color-forest-deep)">{Math.round(loc.data.aqi)}</span>
+                </div>
+              ))}
           </motion.div>
 
-          {/* Main radial gauge — centered against the same box as the rings above */}
+          {/* Main gauge — a 270° arc rather than a closed ring, driven by live data */}
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -233,44 +286,93 @@ export default function Hero() {
             className="absolute inset-0 flex items-center justify-center"
           >
             <div className="relative w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center">
-              {/* Progress ring — conic-gradient, synced to the same `count` driving the number below */}
-              <div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: `conic-gradient(var(--color-forest) ${count * 3.6}deg, var(--color-leaf-soft) ${count * 3.6}deg 360deg)`,
-                  WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px))',
-                  mask: 'radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px))',
-                }}
-              />
-
-              {/* Industry benchmark tick, positioned at 25% around the ring */}
-              <div
-                className="absolute w-2.5 h-2.5 rounded-full shadow-sm"
-                style={{
-                  left: `${benchmarkLeft}%`,
-                  top: `${benchmarkTop}%`,
-                  transform: 'translate(-50%, -50%)',
-                  backgroundColor: 'var(--color-gold, #b58b2e)',
-                }}
-              />
+              <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+                <circle
+                  cx="100"
+                  cy="100"
+                  r={GAUGE_R}
+                  fill="none"
+                  stroke="var(--color-leaf-soft)"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                  strokeDasharray={`${GAUGE_TRACK} ${GAUGE_C - GAUGE_TRACK}`}
+                  transform="rotate(-225 100 100)"
+                />
+                {!loading && spotlightOk && (
+                  <motion.circle
+                    key={activeIndex}
+                    cx="100"
+                    cy="100"
+                    r={GAUGE_R}
+                    fill="none"
+                    stroke={lineColor}
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    initial={{ strokeDasharray: `0 ${GAUGE_C}` }}
+                    animate={{ strokeDasharray: `${progressLength} ${GAUGE_C - progressLength}` }}
+                    transition={{ duration: 1.1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    transform="rotate(-225 100 100)"
+                  />
+                )}
+              </svg>
 
               {/* Center readout */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                <div className="flex items-center gap-1.5 bg-(--color-leaf-soft)/60 text-(--color-forest) text-[10px] font-medium px-2.5 py-1 rounded-full mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-(--color-leaf) animate-pulse" />
-                  Live
-                </div>
-                <span className="text-4xl font-display text-(--color-forest-deep) tabular-nums">
-                  −{count}%
+                {globalError ? (
+                  <button
+                    onClick={() => setReloadToken((t) => t + 1)}
+                    className="flex items-center gap-1.5 bg-[#B5502E]/10 text-[#B5502E] text-[10px] font-medium px-2.5 py-1 rounded-full mb-2 visible-focus"
+                  >
+                    <AlertTriangle size={11} /> Retry <RefreshCw size={11} />
+                  </button>
+                ) : (
+                  <div className={`flex items-center gap-1.5 ${tone.chip} ${tone.text} text-[10px] font-medium px-2.5 py-1 rounded-full mb-2`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-(--color-leaf) animate-pulse" />
+                    {loading ? 'Fetching' : 'Live'}
+                  </div>
+                )}
+
+                <span className={`text-4xl font-display tabular-nums ${globalError ? 'text-(--color-ink-soft)' : 'text-(--color-forest-deep)'}`}>
+                  {loading ? '—' : spotlightOk ? Math.round(spotlightAqi) : '—'}
                 </span>
                 <span className="text-xs text-(--color-ink-soft) mt-1">
-                  emissions vs last year
+                  EU AQI · {spotlight?.name || 'headquarters'}
                 </span>
                 <span className="text-[11px] font-mono text-(--color-ink-soft) mt-2">
-                  1,284 tCO₂e tracked
+                  {globalError ? describeError(globalError) : `${AQ_LOCATIONS.length} sites tracked live`}
                 </span>
               </div>
             </div>
+          </motion.div>
+
+          {/* Location switcher — pick which site the gauge, chips, and particles reflect */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
+            className="absolute -bottom-11 left-0 right-0 flex items-center justify-center gap-1.5 overflow-x-auto px-1"
+          >
+            {AQ_LOCATIONS.map((loc, i) => (
+              <button
+                key={loc.name}
+                type="button"
+                onClick={() => setActiveIndex(i)}
+                aria-label={`Show live air quality for ${loc.name}`}
+                aria-current={i === activeIndex}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors visible-focus ${
+                  i === activeIndex
+                    ? 'bg-(--color-forest-deep) text-white'
+                    : 'text-(--color-ink-soft) hover:bg-(--color-bg)'
+                }`}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: i === activeIndex ? 'currentColor' : locationColor(i) }}
+                />
+                <span aria-hidden="true">{loc.flag}</span>
+                {loc.name}
+              </button>
+            ))}
           </motion.div>
         </motion.div>
       </div>
