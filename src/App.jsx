@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import NewReportPage from './pages/NewReportPage.jsx'
+import AnalyticsPage from './pages/AnalyticsPage.jsx'
 
 export default function App() {
   return (
@@ -15,22 +16,9 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/reports/new"
-            element={
-              <ProtectedRoute>
-                <NewReportPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/dashboard/reports/new" element={<ProtectedRoute><NewReportPage /></ProtectedRoute>} />
+          <Route path="/dashboard/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

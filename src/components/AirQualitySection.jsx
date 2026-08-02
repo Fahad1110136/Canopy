@@ -54,7 +54,7 @@ export default function AirQualitySection() {
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
           <div className="max-w-xl">
-            <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">Live data · Open-Meteo API</span>
+            <span className="text-xs font-mono uppercase tracking-widest text-(--color-forest)">· Live data ·</span>
             <h2 className="font-display text-4xl text-(--color-forest-deep) mt-3 leading-tight">Air quality, wherever your teams are.</h2>
             <p className="mt-3 text-[15px] text-(--color-ink-soft) leading-relaxed">
               Canopy pulls live air-quality readings so facility health and emissions context sit side by side, not in separate reports.
