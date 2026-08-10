@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getToken, setToken as saveToken, clearToken } from '../utils/tokenStorage.js'
-import { fetchCurrentUser, loginRequest, signupRequest } from '../services/authApi.js'
+import { fetchCurrentUser, loginRequest, signupRequest, verifyEmailRequest, resendVerificationRequest } from '../services/authApi.js'
 
 const AuthContext = createContext(null)
 
@@ -24,17 +24,25 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signup = useCallback(async (name, email, password, companyChoice) => {
-    const { token, user: newUser } = await signupRequest(name, email, password, companyChoice)
-    saveToken(token)
-    setUser(newUser)
+    // No token comes back here — the account is unverified until they
+    // click the link in their email, so we deliberately don't log them in.
+    return signupRequest(name, email, password, companyChoice)
   }, [])
+
+  const verifyEmail = useCallback(async (token) => {
+    const { token: jwt, user: verifiedUser } = await verifyEmailRequest(token)
+    saveToken(jwt)
+    setUser(verifiedUser)
+  }, [])
+
+  const resendVerification = useCallback((email) => resendVerificationRequest(email), [])
 
   const logout = useCallback(() => {
     clearToken()
     setUser(null)
   }, [])
 
-  const value = { user, initializing, isAuthenticated: Boolean(user), login, signup, logout }
+  const value = { user, initializing, isAuthenticated: Boolean(user), login, signup, verifyEmail, resendVerification, logout }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

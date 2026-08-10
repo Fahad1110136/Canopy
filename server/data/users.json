@@ -1,29 +1,14 @@
 [
   {
-    "id": "msans4pd66unu",
-    "name": "Fahad Idrees",
-    "email": "fahadidrees1110136@gmail.com",
-    "passwordHash": "$2b$10$rfroMRU5jJ/6GH7fVOYQ0.tJZSLSswtGL9Fry01FoZQ8iE4hauN2y",
-    "companyId": "msans4jx9efcs",
-    "role": "admin",
-    "createdAt": "2026-08-01T17:42:00.913Z"
-  },
-  {
-    "id": "msanupznbmovv",
+    "id": "msnh3ohb4ghr8",
     "name": "Abdullah Idrees",
     "email": "abdullahidrees3147563405@gmail.com",
-    "passwordHash": "$2b$10$jZ3OQUTAkHWKoFJmLOr./OZXQuawk/i0b7Se6dAkVjYAa8JYOAHHG",
-    "companyId": "msans4jx9efcs",
-    "role": "member",
-    "createdAt": "2026-08-01T17:44:01.811Z"
-  },
-  {
-    "id": "msao1xocpdbnd",
-    "name": "Idrees",
-    "email": "idrees7897@gmail.com",
-    "passwordHash": "$2b$10$qA6mKUxhPYRjFdftxBHOdOvsnF5Cw1AqtGxQEs/6OrzN/ubjiNSaS",
-    "companyId": "msao1xjfyvsrh",
+    "passwordHash": "$2b$10$b5oqrgglUZZSHiNN1c9/d.SQf4RV0VjBdRMAeA84ietBI4Xz9s.oO",
+    "companyId": "msnh3oc2vkpme",
     "role": "admin",
-    "createdAt": "2026-08-01T17:49:38.364Z"
+    "verified": true,
+    "verificationToken": null,
+    "verificationTokenExpiry": null,
+    "createdAt": "2026-08-10T16:56:02.735Z"
   }
 ]

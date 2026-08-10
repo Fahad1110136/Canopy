@@ -1,8 +1,16 @@
+import crypto from 'crypto'
 import { Router } from 'express'
-import { findUserByEmail, findUserById, createUser, toPublicUser } from '../storeUsers.js'
+import { findUserByEmail, findUserById, createUser, toPublicUser, findUserByVerificationToken, setVerificationToken, markUserVerified } from '../storeUsers.js'
 import { getCompanyById, getCompanyByJoinCode, createCompany } from '../storeCompanies.js'
 import { hashPassword, verifyPassword, signToken } from '../utils/auth.js'
 import { requireAuth } from '../middleware/requireAuth.js'
+import { sendVerificationEmail } from '../utils/email.js'
+
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+function generateVerificationToken() {
+  return crypto.randomBytes(32).toString('hex')
+}
 
 const router = Router()
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -64,10 +72,62 @@ router.post('/signup', async (req, res) => {
   }
 
   const passwordHash = await hashPassword(password)
-  const user = createUser({ name: name.trim(), email, passwordHash, companyId: company.id, role })
-  const token = signToken(user)
+  const verificationToken = generateVerificationToken()
+  const verificationTokenExpiry = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString()
+  const user = createUser({
+    name: name.trim(), email, passwordHash, companyId: company.id, role,
+    verificationToken, verificationTokenExpiry,
+  })
 
-  res.status(201).json({ token, user: withCompany(user) })
+  try {
+    await sendVerificationEmail(user, verificationToken)
+  } catch (err) {
+    console.error('Failed to send verification email:', err)
+    // Account still exists — the resend endpoint lets them retry rather
+    // than making signup itself fail because of a transient email error.
+  }
+
+  // No token/session yet — the account isn't usable until the email is
+  // verified, so we don't log them in here.
+  res.status(201).json({ pendingVerification: true, email: user.email })
+})
+
+router.get('/verify', (req, res) => {
+  const { token } = req.query
+  if (!token) return res.status(400).json({ error: 'Missing verification token.' })
+
+  const user = findUserByVerificationToken(token)
+  if (!user) return res.status(400).json({ error: 'INVALID_TOKEN' })
+
+  if (user.verificationTokenExpiry && new Date(user.verificationTokenExpiry) < new Date()) {
+    return res.status(400).json({ error: 'TOKEN_EXPIRED' })
+  }
+
+  markUserVerified(user.id)
+  const freshUser = findUserById(user.id)
+  const jwt = signToken(freshUser)
+  res.json({ token: jwt, user: withCompany(freshUser) })
+})
+
+router.post('/resend-verification', async (req, res) => {
+  const { email } = req.body || {}
+  if (!email) return res.status(400).json({ error: 'Email is required.' })
+
+  const user = findUserByEmail(email)
+  // Don't reveal whether the account exists — respond the same way either way.
+  if (!user || user.verified) return res.json({ ok: true })
+
+  const verificationToken = generateVerificationToken()
+  const verificationTokenExpiry = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString()
+  setVerificationToken(user.id, verificationToken, verificationTokenExpiry)
+
+  try {
+    await sendVerificationEmail(user, verificationToken)
+  } catch (err) {
+    console.error('Failed to resend verification email:', err)
+  }
+
+  res.json({ ok: true })
 })
 
 router.post('/login', async (req, res) => {
@@ -80,6 +140,10 @@ router.post('/login', async (req, res) => {
 
   const passwordMatches = await verifyPassword(password, user.passwordHash)
   if (!passwordMatches) return invalidCredentials()
+
+  if (!user.verified) {
+    return res.status(403).json({ error: 'EMAIL_NOT_VERIFIED' })
+  }
 
   const token = signToken(user)
   res.json({ token, user: withCompany(user) })

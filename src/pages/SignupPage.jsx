@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Loader2, AlertTriangle, Leaf, Check, X, Building2, KeyRound } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Loader2, AlertTriangle, Leaf, Check, X, Building2, KeyRound, Mail } from 'lucide-react'
 import Layout from '../components/Layout.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { describeAuthError } from '../services/authApi.js'
@@ -13,7 +13,6 @@ function passwordRuleState(password) {
 
 export default function SignupPage() {
   const { signup } = useAuth()
-  const navigate = useNavigate()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -26,6 +25,7 @@ export default function SignupPage() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [apiError, setApiError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState(null)
 
   const rules = passwordRuleState(password)
   const passwordValid = rules.length && rules.letter && rules.number
@@ -60,13 +60,45 @@ export default function SignupPage() {
         companyMode === 'create'
           ? { mode: 'create', companyName: companyName.trim() }
           : { mode: 'join', joinCode: joinCode.trim() }
-      await signup(name.trim(), email.trim(), password, companyChoice)
-      navigate('/dashboard', { replace: true })
+      const result = await signup(name.trim(), email.trim(), password, companyChoice)
+      setPendingEmail(result.email)
     } catch (err) {
       setApiError(describeAuthError(err.message))
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (pendingEmail) {
+    return (
+      <Layout>
+        <section className="min-h-[85vh] flex items-center justify-center px-6 py-28">
+          <div className="w-full max-w-sm text-center">
+            <span className="grid place-items-center w-12 h-12 rounded-full bg-(--color-forest)/10 text-(--color-forest) mx-auto mb-6">
+              <Mail size={22} />
+            </span>
+            <h1 className="font-display text-2xl text-(--color-forest-deep)">Check your email</h1>
+            <p className="mt-3 text-sm text-(--color-ink-soft)">
+              We sent a verification link to <span className="font-medium text-(--color-forest-deep)">{pendingEmail}</span>.
+              Click it to activate your account, then come back and log in.
+            </p>
+            <p className="mt-6 text-sm text-(--color-ink-soft)">
+              Wrong email or link didn't arrive?{' '}
+              <button
+                type="button"
+                onClick={() => setPendingEmail(null)}
+                className="text-(--color-forest-deep) underline visible-focus"
+              >
+                Try again
+              </button>
+            </p>
+            <p className="mt-2 text-sm text-(--color-ink-soft)">
+              <Link to="/login" className="text-(--color-forest-deep) underline">Back to log in</Link>
+            </p>
+          </div>
+        </section>
+      </Layout>
+    )
   }
 
   return (

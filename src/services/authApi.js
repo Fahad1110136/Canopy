@@ -36,8 +36,17 @@ export function fetchCurrentUser() {
   const token = getToken()
   return request('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
 }
+export function verifyEmailRequest(token) {
+  return request(`/auth/verify?token=${encodeURIComponent(token)}`)
+}
+export function resendVerificationRequest(email) {
+  return request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }) })
+}
 export function describeAuthError(message) {
   if (message === 'NETWORK_ERROR') return "Couldn't reach the Canopy backend. Is the server running on port 4000?"
+  if (message === 'EMAIL_NOT_VERIFIED') return 'Please verify your email before logging in.'
+  if (message === 'INVALID_TOKEN') return 'That verification link is invalid.'
+  if (message === 'TOKEN_EXPIRED') return 'That verification link has expired.'
   if (message?.startsWith('REQUEST_FAILED_')) return 'Something went wrong talking to the server.'
   return message || 'Something went wrong.'
 }

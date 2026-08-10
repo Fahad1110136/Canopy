@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Loader2, AlertTriangle, Leaf } from 'lucide-react'
+import { Loader2, AlertTriangle, Leaf, Mail, Check } from 'lucide-react'
 import Layout from '../components/Layout.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { describeAuthError } from '../services/authApi.js'
@@ -9,7 +9,7 @@ import { describeAuthError } from '../services/authApi.js'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, resendVerification } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -18,6 +18,8 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [apiError, setApiError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [resendState, setResendState] = useState('idle') // 'idle' | 'sending' | 'sent'
 
   function validate() {
     const errors = {}
@@ -30,6 +32,8 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setApiError(null)
+    setNeedsVerification(false)
+    setResendState('idle')
     const errors = validate()
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
@@ -40,9 +44,20 @@ export default function LoginPage() {
       const redirectTo = location.state?.from && location.state.from !== '/login' ? location.state.from : '/dashboard'
       navigate(redirectTo, { replace: true })
     } catch (err) {
+      if (err.message === 'EMAIL_NOT_VERIFIED') setNeedsVerification(true)
       setApiError(describeAuthError(err.message))
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleResend() {
+    setResendState('sending')
+    try {
+      await resendVerification(email.trim())
+      setResendState('sent')
+    } catch {
+      setResendState('idle')
     }
   }
 
@@ -104,6 +119,25 @@ export default function LoginPage() {
               <p className="flex items-center gap-1.5 text-sm text-[#B5502E]">
                 <AlertTriangle size={14} className="shrink-0" /> {apiError}
               </p>
+            )}
+
+            {needsVerification && (
+              <div className="text-sm">
+                {resendState === 'sent' ? (
+                  <p className="flex items-center gap-1.5 text-(--color-forest)">
+                    <Check size={14} /> Verification email sent — check your inbox.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendState === 'sending'}
+                    className="flex items-center gap-1.5 text-(--color-forest-deep) underline visible-focus disabled:opacity-60"
+                  >
+                    <Mail size={14} /> {resendState === 'sending' ? 'Sending…' : 'Resend verification email'}
+                  </button>
+                )}
+              </div>
             )}
 
             <button
