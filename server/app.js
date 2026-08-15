@@ -21,6 +21,12 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// Browsers auto-request these; they don't need a DB connection, and
+// letting them through avoids adding to the concurrent-connection burst
+// on cold starts (see db.js for why that mattered here).
+app.get('/favicon.ico', (req, res) => res.status(204).end())
+app.get('/favicon.png', (req, res) => res.status(204).end())
+
 // Ensures the MongoDB connection is established before any route runs.
 // connectDB() caches the connection internally, so on a warm serverless
 // instance this is a no-op after the first request.
