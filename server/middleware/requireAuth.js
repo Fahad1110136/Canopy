@@ -1,7 +1,7 @@
 import { verifyToken } from '../utils/auth.js'
 import { findUserById, toPublicUser } from '../storeUsers.js'
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || ''
   const [scheme, token] = header.split(' ')
 
@@ -19,7 +19,7 @@ export function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'INVALID_TOKEN' })
   }
 
-  const user = findUserById(payload.sub)
+  const user = await findUserById(payload.sub)
   if (!user) {
     return res.status(401).json({ error: 'INVALID_TOKEN' })
   }
@@ -27,3 +27,40 @@ export function requireAuth(req, res, next) {
   req.user = toPublicUser(user)
   next()
 }
+
+
+
+
+
+
+
+
+// import { verifyToken } from '../utils/auth.js'
+// import { findUserById, toPublicUser } from '../storeUsers.js'
+
+// export function requireAuth(req, res, next) {
+//   const header = req.headers.authorization || ''
+//   const [scheme, token] = header.split(' ')
+
+//   if (scheme !== 'Bearer' || !token) {
+//     return res.status(401).json({ error: 'NO_TOKEN' })
+//   }
+
+//   let payload
+//   try {
+//     payload = verifyToken(token)
+//   } catch (err) {
+//     if (err.name === 'TokenExpiredError') {
+//       return res.status(401).json({ error: 'TOKEN_EXPIRED' })
+//     }
+//     return res.status(401).json({ error: 'INVALID_TOKEN' })
+//   }
+
+//   const user = findUserById(payload.sub)
+//   if (!user) {
+//     return res.status(401).json({ error: 'INVALID_TOKEN' })
+//   }
+
+//   req.user = toPublicUser(user)
+//   next()
+// }

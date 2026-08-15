@@ -1,14 +1,1 @@
-[
-  {
-    "id": "msnh3ohb4ghr8",
-    "name": "Abdullah Idrees",
-    "email": "abdullahidrees3147563405@gmail.com",
-    "passwordHash": "$2b$10$b5oqrgglUZZSHiNN1c9/d.SQf4RV0VjBdRMAeA84ietBI4Xz9s.oO",
-    "companyId": "msnh3oc2vkpme",
-    "role": "admin",
-    "verified": true,
-    "verificationToken": null,
-    "verificationTokenExpiry": null,
-    "createdAt": "2026-08-10T16:56:02.735Z"
-  }
-]
+[]
