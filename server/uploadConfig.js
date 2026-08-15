@@ -1,9 +1,18 @@
 import multer from 'multer'
 import path from 'path'
+import os from 'os'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-export const UPLOAD_DIR = path.join(__dirname, 'uploads')
+
+// On Vercel (and most serverless platforms) the project directory is
+// read-only — only /tmp is writable, and even that doesn't persist
+// between invocations. We detect that environment and write there
+// instead, so the app doesn't crash; uploaded files just won't survive
+// past the current request/instance (same caveat as before, now safe).
+export const UPLOAD_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'canopy-uploads')
+  : path.join(__dirname, 'uploads')
 
 export const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
