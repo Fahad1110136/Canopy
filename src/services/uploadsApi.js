@@ -3,9 +3,9 @@ import { getToken } from '../utils/tokenStorage.js'
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
 
-/** Turns the relative "/uploads/xyz.png" the backend returns into a full URL. */
 export function resolveUploadUrl(url) {
   if (!url) return null
+  if (/^https?:\/\//i.test(url)) return url
   return `${API_ORIGIN}${url}`
 }
 
@@ -53,9 +53,12 @@ export function uploadFile(file, { onProgress, signal } = {}) {
   })
 }
 
-export async function removeUploadedFile(filename) {
+// Cloudinary's publicId contains a slash (folder/filename), so it's sent
+// as a query param rather than a route param — Express would otherwise
+// split "canopy-reports/abc123" into two path segments.
+export async function removeUploadedFile(publicId) {
   const token = getToken()
-  const response = await fetch(`${API_BASE}/uploads/${filename}`, {
+  const response = await fetch(`${API_BASE}/uploads?publicId=${encodeURIComponent(publicId)}`, {
     method: 'DELETE',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })

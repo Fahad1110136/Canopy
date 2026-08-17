@@ -1,47 +1,70 @@
 import { Router } from 'express'
-import fs from 'fs'
-import path from 'path'
 import { requireAuth } from '../middleware/requireAuth.js'
-import { upload, handleUploadErrors, UPLOAD_DIR } from '../uploadConfig.js'
+import { upload, handleUploadErrors, cloudinary } from '../uploadConfig.js'
 
 const router = Router()
 
-// Matches only the filenames our own storage config generates
-// (timestamp-random.ext) — guards against path traversal on delete.
-const SAFE_FILENAME_RE = /^[0-9]+-[a-z0-9]+\.[a-z0-9]+$/i
+// Streams a buffer to Cloudinary via its upload_stream API (no temp file
+// on disk anywhere — the buffer goes straight from memory to Cloudinary).
+function uploadBufferToCloudinary(buffer, originalName) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'canopy-reports',
+        resource_type: 'auto', // handles both images and PDFs correctly
+        // Keeps a recognizable original filename in Cloudinary's admin
+        // console, purely for your own reference when browsing there.
+        filename_override: originalName,
+      },
+      (err, result) => (err ? reject(err) : resolve(result))
+    )
+    stream.end(buffer)
+  })
+}
 
-// POST /api/uploads — upload a single file, get back its URL + metadata.
-// Generic and feature-agnostic: any form (report evidence, a future avatar
-// uploader, etc.) can call this and attach the returned metadata to
-// whatever resource it belongs to.
-router.post('/', requireAuth, handleUploadErrors(upload.single('file')), (req, res) => {
+// POST /api/uploads — upload a single file, get back its permanent
+// Cloudinary URL + metadata. Generic and feature-agnostic: any form
+// (report evidence, a future avatar uploader, etc.) can call this and
+// attach the returned metadata to whatever resource it belongs to.
+router.post('/', requireAuth, handleUploadErrors(upload.single('file')), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file was uploaded.' })
   }
-  res.status(201).json({
-    filename: req.file.filename,
-    originalName: req.file.originalname,
-    mimetype: req.file.mimetype,
-    size: req.file.size,
-    url: `/uploads/${req.file.filename}`,
-  })
+
+  try {
+    const result = await uploadBufferToCloudinary(req.file.buffer, req.file.originalname)
+    res.status(201).json({
+      // public_id is what we need later to delete the file from Cloudinary.
+      publicId: result.public_id,
+      originalName: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      url: result.secure_url,
+    })
+  } catch (err) {
+    console.error('Cloudinary upload failed:', err)
+    res.status(500).json({ error: 'Could not upload the file. Please try again.' })
+  }
 })
 
-// DELETE /api/uploads/:filename — removes an uploaded-but-not-yet-attached
-// file (e.g. the user changed their mind before submitting the form it
-// belongs to), so we don't accumulate orphaned files on disk.
-router.delete('/:filename', requireAuth, (req, res) => {
-  const { filename } = req.params
-  if (!SAFE_FILENAME_RE.test(filename)) {
-    return res.status(400).json({ error: 'Invalid filename.' })
+// DELETE /api/uploads/:publicId — removes an uploaded-but-not-yet-attached
+// file from Cloudinary (e.g. the user changed their mind before submitting
+// the form it belongs to), so we don't accumulate orphaned files.
+// publicId contains a slash (folder/filename), so it's passed as a query
+// param rather than a route param to avoid Express splitting it in two.
+router.delete('/', requireAuth, async (req, res) => {
+  const { publicId } = req.query
+  if (!publicId || typeof publicId !== 'string' || !publicId.startsWith('canopy-reports/')) {
+    return res.status(400).json({ error: 'Invalid file reference.' })
   }
-  const filePath = path.join(UPLOAD_DIR, filename)
-  fs.unlink(filePath, (err) => {
-    if (err && err.code !== 'ENOENT') {
-      return res.status(500).json({ error: 'Could not delete the file.' })
-    }
+
+  try {
+    await cloudinary.uploader.destroy(publicId)
     res.status(204).send()
-  })
+  } catch (err) {
+    console.error('Cloudinary delete failed:', err)
+    res.status(500).json({ error: 'Could not delete the file.' })
+  }
 })
 
 export default router

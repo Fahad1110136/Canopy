@@ -4,7 +4,8 @@ import { getFacilityById } from '../store.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 
 export const SCOPES = ['Scope 1', 'Scope 2', 'Scope 3']
-const SAFE_FILENAME_RE = /^[0-9]+-[a-z0-9]+\.[a-z0-9]+$/i
+// const SAFE_FILENAME_RE = /^[0-9]+-[a-z0-9]+\.[a-z0-9]+$/i
+const SAFE_CLOUDINARY_URL_RE = /^https:\/\/res\.cloudinary\.com\/[a-z0-9-]+\/(image|raw)\/upload\/.+$/i
 
 async function validate(body, companyId) {
   const errors = []
@@ -36,7 +37,7 @@ async function validate(body, companyId) {
 
   if (body.evidenceFile) {
     const f = body.evidenceFile
-    if (typeof f !== 'object' || !f.filename || !SAFE_FILENAME_RE.test(f.filename)) {
+    if (typeof f !== 'object' || !f.url || !SAFE_CLOUDINARY_URL_RE.test(f.url) || !f.publicId) {
       errors.push('Evidence file reference is invalid.')
     }
   }

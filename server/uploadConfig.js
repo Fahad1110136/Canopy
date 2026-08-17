@@ -1,29 +1,22 @@
 import multer from 'multer'
-import path from 'path'
-import os from 'os'
-import { fileURLToPath } from 'url'
+import { v2 as cloudinary } from 'cloudinary'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
-// On Vercel (and most serverless platforms) the project directory is
-// read-only — only /tmp is writable, and even that doesn't persist
-// between invocations. We detect that environment and write there
-// instead, so the app doesn't crash; uploaded files just won't survive
-// past the current request/instance (same caveat as before, now safe).
-export const UPLOAD_DIR = process.env.VERCEL
-  ? path.join(os.tmpdir(), 'canopy-uploads')
-  : path.join(__dirname, 'uploads')
+export { cloudinary }
 
 export const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname)
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`)
-  },
-})
+// Memory storage instead of disk — we never write the file to this
+// server at all. Multer just holds the buffer in memory long enough for
+// us to stream it straight to Cloudinary, which is what actually stores
+// it (permanently, unlike our own filesystem).
+const storage = multer.memoryStorage()
 
 export const upload = multer({
   storage,

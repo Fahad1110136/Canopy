@@ -1,21 +1,10 @@
 import express from 'express'
 import cors from 'cors'
-import fs from 'fs'
 import { connectDB } from './db.js'
 import facilitiesRouter from './routes/facilities.js'
 import authRouter from './routes/auth.js'
 import reportsRouter from './routes/reports.js'
 import uploadsRouter from './routes/uploads.js'
-import { UPLOAD_DIR } from './uploadConfig.js'
-
-// Best-effort — on Vercel this points to /tmp (writable but not
-// persistent); locally it's the real uploads/ folder. Wrapped in
-// try/catch so a read-only filesystem elsewhere never crashes startup.
-try {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true })
-} catch (err) {
-  console.error('Could not create upload directory:', err.message)
-}
 
 const app = express()
 app.use(cors())
@@ -40,7 +29,8 @@ app.use(async (req, res, next) => {
   }
 })
 
-app.use('/uploads', express.static(UPLOAD_DIR))
+// No more local /uploads static route — uploaded files now live on
+// Cloudinary and are served directly from its CDN URLs.
 app.get('/', (req, res) => res.json({ status: 'ok', message: 'Canopy backend API is running' }))
 app.use('/api/facilities', facilitiesRouter)
 app.use('/api/auth', authRouter)

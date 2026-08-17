@@ -101,12 +101,12 @@ export default function FileDropzone({
     setError(null)
     const toRemove = value
     onChange?.(null)
-    if (toRemove?.filename) {
+    if (toRemove?.publicId) {
       try {
-        await removeUploadedFile(toRemove.filename)
+        await removeUploadedFile(toRemove.publicId)
       } catch {
         // Best-effort cleanup — if this fails the file is simply orphaned on
-        // disk, which doesn't affect the user's current form state.
+        // Cloudinary, which doesn't affect the user's current form state.
       }
     }
   }
