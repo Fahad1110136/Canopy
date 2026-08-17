@@ -1,13 +1,13 @@
-# Canopy
+# 🌿 Canopy
 
 Canopy is a carbon emissions tracking platform for companies. Teams sign up, register their facilities, and log emissions reports (Scope 1, 2, and 3) with supporting evidence — turning what's usually a once-a-year compliance scramble into something tracked continuously, with an audit trail.
 
-**Live app:** https://canopy-carbonintelligent.vercel.app
-**Live API:** https://canopy-carbonintelligent-backend.vercel.app
+🔗 **Live app:** https://canopy-carbonintelligent.vercel.app
+🔗 **Live API:** https://canopy-carbonintelligent-backend.vercel.app
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 **Frontend**
 - React 19 + Vite
@@ -35,7 +35,7 @@ Canopy is a carbon emissions tracking platform for companies. Teams sign up, reg
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 Canopy is split into two independently deployed Vercel projects sharing one GitHub repo:
 
@@ -61,7 +61,7 @@ Canopy is split into two independently deployed Vercel projects sharing one GitH
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 canopy/
@@ -94,7 +94,7 @@ canopy/
 
 ---
 
-## Local Development
+## 💻 Local Development
 
 ### Prerequisites
 - Node.js 18+
@@ -120,7 +120,7 @@ Runs on `http://localhost:4000`
 
 ---
 
-## Environment Variables
+## 🔑 Environment Variables
 
 ### Frontend (`.env` at project root, or Vercel → frontend project → Environment Variables)
 
@@ -147,7 +147,7 @@ If unset, the frontend falls back to `http://localhost:4000/api` for local devel
 
 ---
 
-## Data Models
+## 🗂️ Data Models
 
 **User** — `name`, `email` (unique), `passwordHash`, `companyId`, `role` (`admin` | `member`), `verified`, `verificationToken`, `verificationTokenExpiry`, `createdAt`
 
@@ -161,7 +161,7 @@ All models use a custom `id` string field (not Mongo's `_id`) for consistency wi
 
 ---
 
-## Deployment
+## 🚀 Deployment
 
 ### Frontend (Vercel)
 - Framework preset: Vite/React (auto-detected)
@@ -188,7 +188,7 @@ All models use a custom `id` string field (not Mongo's `_id`) for consistency wi
 
 ---
 
-## Third-Party Services
+## 🔌 Third-Party Services
 
 | Service | Purpose | Free tier limit |
 |---|---|---|
