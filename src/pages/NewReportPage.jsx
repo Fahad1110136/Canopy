@@ -229,6 +229,9 @@ export default function NewReportPage() {
                   >
                     <div className="min-w-0">
                       <p className="text-sm text-(--color-ink) truncate">{r.facilityName} · {r.scope} · {r.amount} t CO₂e</p>
+                      <p className="text-xs text-(--color-ink-soft) mt-1 italic">
+                        {r.notes?.trim() ? r.notes : 'No comments added!'}
+                      </p>
                       <p className="text-xs text-(--color-ink-soft)">{r.reportDate} — submitted by {r.reporterName}</p>
                     </div>
                     {r.evidenceFile && (
